@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Threat {
+  id                        Int     @id @default(autoincrement())
+  threatCategory            String
+  iocs                      String
+  threatActor               String
+  attackVector              String
+  geographicalLocation      String
+  sentimentInForums         String
+  severityScore             Float
+  predictedThreatCategory   String
+  suggestedDefenseMechanism String
+  riskLevelPrediction       String
+  cleanedText               String
+  keywordExtraction         String
+  namedEntities             String
+  topicModelingLabels       String
+  wordCount                 Int
+}
