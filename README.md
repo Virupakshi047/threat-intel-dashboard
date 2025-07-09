@@ -1,135 +1,114 @@
 # Threat Intel Dashboard
 
-A full-stack web application for visualizing and analyzing cyber threat intelligence data.
-
-## Project Structure
-
-- `frontend/` – React, Vite, TypeScript, Tailwind CSS, shadcn-ui
-  - `src/components/` – UI, dashboard, layout, and threat-related components
-  - `src/pages/` – Main app pages (Dashboard, Analysis, Threats, etc.)
-  - `src/hooks/`, `src/lib/`, `src/types/` – Custom hooks, utilities, and type definitions
-- `backend/` – Node.js, TypeScript, Express, Prisma ORM
-  - `src/controllers/` – API controllers
-  - `src/routes/` – Express route definitions
-  - `src/services/` – Business logic and data ingestion
-  - `prisma/` – Prisma schema, migrations, and client
-  - `data/` – Source data (e.g., `cyber_threat_data.csv`)
-  - `ml/` – (Reserved for machine learning scripts/models)
+A full-stack web application for visualizing and analyzing cyber threat intelligence data, featuring real-time updates, machine learning-based threat analysis, and interactive dashboards.
 
 ---
 
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) (v16 or higher recommended)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+## Features
+- **Real-time threat analysis updates** via WebSockets
+- **Recent analysis dashboard** with live notifications
+- **Threat ingestion** from CSV to PostgreSQL
+- **ML-powered threat category prediction** (Python, scikit-learn)
+- **Modern UI** with React, Vite, Tailwind CSS, and shadcn-ui
+- **Containerized stack** for easy deployment
 
 ---
 
-## Setup Instructions
+## Technology Stack & Justification
+- **Frontend:** React + Vite + TypeScript + Tailwind CSS + shadcn-ui
+  - *Why:* Fast development, modern UI, type safety, and great developer experience.
+- **Backend:** Node.js + Express + TypeScript + Prisma ORM
+  - *Why:* Robust API, type safety, and easy database integration.
+- **Database:** PostgreSQL
+  - *Why:* Reliable, open-source, and well-supported by Prisma.
+- **Machine Learning:** Python (scikit-learn)
+  - *Why:* Easy integration for ML models and predictions.
+- **Containerization:** Docker & Docker Compose
+  - *Why:* Consistent, reproducible, and easy to deploy anywhere.
+
+---
+
+##  Quick Start: Docker Setup (Recommended)
 
 ### 1. Clone the Repository
-
 ```sh
 git clone <YOUR_GIT_URL>
 cd threat-intel-dashboard
 ```
 
-### 2. Install Dependencies
+### 2. Build and Start All Services
+```sh
+docker-compose up --build
+```
+- This will build and start the backend, frontend, and PostgreSQL database.
+- The first build may take a few minutes.
 
+### 3. Access the Application
+- **Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:3000](http://localhost:3000)
+- **Postgres:** localhost:5432 (user: `postgres`, password: `postgres`, db: `threatintel`)
+
+### 4. Run Database Migrations (First Time Only)
+In a new terminal:
+```sh
+docker-compose exec backend npx prisma migrate deploy
+```
+
+### 5. Ingest Threat Data
+```sh
+docker-compose exec backend npm run ingest
+```
+- This will populate the database from `backend/data/cyber_threat_data.csv`.
+
+### 6. Stopping and Cleaning Up
+```sh
+docker-compose down -v
+```
+- Stops all containers and removes volumes (including database data).
+
+---
+
+
+
+## Non-Docker Setup
+
+### 1. Install Dependencies
 #### Backend
 ```sh
 cd backend
 npm install
 ```
-
 #### Frontend
 ```sh
-cd ../frontend
+cd frontend
 npm install
 ```
 
----
+### 2. Set Up Environment Variables
+- Create `backend/.env` with your database connection string.
+- inside .env add `DATABASE_URL=postgresql://<username>:<password>@db:5432/<dbname>`
 
-## Ingest Data into database
-
-Before running the backend, you can ingest the threat data into your database:
-
+### 3. Run Database Migrations
 ```sh
 cd backend
+npx prisma migrate dev
+```
+
+### 4. Ingest Data
+```sh
 npm run ingest
 ```
-- This command reads from `data/cyber_threat_data.csv` and populates your database using Prisma.
 
----
-
-## Running the Application (Development)
-
-### 1. Start the Backend
-
+### 5. Start Servers
+#### Backend
 ```sh
-cd backend
 npm run backend
 ```
-- The backend server will start (default: http://localhost:3000 or as configured).
-- The backend uses data from `backend/data/cyber_threat_data.csv` and connects to a database via Prisma (see Environment Variables below).
-
-### 2. Start the Frontend
-
-Open a new terminal window/tab:
-
+#### Frontend
 ```sh
-cd frontend
+cd ../frontend
 npm run frontend
 ```
-- The frontend will start (default: http://localhost:5173 or as configured by Vite).
-
----
-
-## Environment Variables (Backend)
-
-- If your backend requires environment variables (e.g., database connection), create a `.env` file in `backend/`.
-- Example:
-  ```env
-  DATABASE_URL=your_database_url_here
-  PORT=3000
-  ```
-- Check `backend/prisma/schema.prisma` for database details.
-- To set up the database, run:
-  ```sh
-  cd backend
-  npx prisma migrate dev
-  ```
-
----
-
-## Build for Production
-
-### Backend
-```sh
-cd backend
-npm run build
-```
-
-### Frontend
-```sh
-cd frontend
-npm run build
-```
-- Production build will be in `frontend/dist/`.
-
----
-
-## Technologies Used
-- **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn-ui
-- **Backend:** Node.js, Express, TypeScript, Prisma ORM
-
----
-
-## Troubleshooting
-- Ensure Node.js and npm are installed and up to date.
-- If ports are in use, change them in the respective config files or `.env`.
-- For database issues, check your `.env` and Prisma setup in `backend/prisma/`.
-- If you modify the Prisma schema, run `npx prisma generate` in `backend/`.
 
 ---
 
@@ -139,3 +118,5 @@ npm run build
 - [Prisma Documentation](https://www.prisma.io/docs/)
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
+
+---
