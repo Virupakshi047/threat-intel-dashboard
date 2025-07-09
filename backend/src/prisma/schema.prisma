@@ -24,4 +24,5 @@ model Threat {
   namedEntities             String
   topicModelingLabels       String
   wordCount                 Int
+  createdAt                 DateTime @default(now())
 }

@@ -26,6 +26,7 @@ async function ingestData() {
         namedEntities: row["Named Entities (NER)"] || "",
         topicModelingLabels: row["Topic Modeling Labels"] || "",
         wordCount: parseInt(row["Word Count"]) || 0,
+        
       });
     })
     .on("end", async () => {

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../prisma/client";
 
 export const getAllThreats = async (req: Request, res: Response) => {
-  const { page = "1", limit = "10", category, search } = req.query;
+  const { page = "1", limit = "10", category, search, sort } = req.query;
 
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
@@ -24,11 +24,18 @@ export const getAllThreats = async (req: Request, res: Response) => {
     };
   }
 
+  let orderBy: any = { createdAt: 'desc' };
+  if (sort && typeof sort === 'string') {
+    if (sort === 'createdAt_asc') orderBy = { createdAt: 'asc' };
+    else if (sort === 'createdAt_desc') orderBy = { createdAt: 'desc' };
+  }
+
   try {
     const threats = await prisma.threat.findMany({
       where,
       skip,
       take: limitNum,
+      orderBy,
     });
 
     const total = await prisma.threat.count({ where });

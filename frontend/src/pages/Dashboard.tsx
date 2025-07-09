@@ -1,13 +1,32 @@
 import { useEffect, useState } from 'react';
 import { ThreatStats, ThreatStatsApiResponse } from '@/types/threat';
+import { Threat } from '@/types/threat';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ThreatChart } from '@/components/dashboard/ThreatChart';
 import { Shield, AlertTriangle, Activity, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+function getSeverityLabel(score: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
+  if (score >= 4) return 'CRITICAL';
+  if (score === 3) return 'HIGH';
+  if (score === 2) return 'MEDIUM';
+  return 'LOW';
+}
+
+function getSeverityClass(label: string) {
+  switch (label) {
+    case 'CRITICAL': return 'bg-red-600 text-white';
+    case 'HIGH': return 'bg-orange-600 text-white';
+    case 'MEDIUM': return 'bg-yellow-500 text-black';
+    case 'LOW': return 'bg-green-600 text-white';
+    default: return 'bg-muted text-foreground';
+  }
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState<ThreatStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentThreats, setRecentThreats] = useState<Threat[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -36,7 +55,18 @@ const Dashboard = () => {
       }
     };
 
+    const fetchRecentThreats = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/threats?limit=5&sort=createdAt_desc');
+        const data = await response.json();
+        setRecentThreats(data.data || []);
+      } catch (error) {
+        console.error('Error fetching recent threats:', error);
+      }
+    };
+
     fetchStats();
+    fetchRecentThreats();
   }, []);
 
   if (loading) {
@@ -124,27 +154,29 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {stats.recentThreats.slice(0, 5).map((threat) => (
-              <div key={threat.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{threat.title}</h4>
-                  <p className="text-sm text-muted-foreground">{threat.category}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    threat.severity === 'critical' ? 'bg-critical text-critical-foreground' :
-                    threat.severity === 'high' ? 'bg-destructive text-destructive-foreground' :
-                    threat.severity === 'medium' ? 'bg-warning text-warning-foreground' :
-                    'bg-success text-success-foreground'
-                  }`}>
-                    {threat.severity.toUpperCase()}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(threat.date).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
+            {recentThreats.length === 0 ? (
+              <div className="text-muted-foreground">No recent threats found.</div>
+            ) : (
+              recentThreats.map((threat) => {
+                const severityLabel = getSeverityLabel(threat.severityScore);
+                return (
+                  <div key={threat.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold">{threat.threatCategory}</h4>
+                      <p className="text-sm text-muted-foreground">{threat.threatActor}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getSeverityClass(severityLabel)}`}>
+                        {severityLabel}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {threat.createdAt ? new Date(threat.createdAt).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </CardContent>
       </Card>
