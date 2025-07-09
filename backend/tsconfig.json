@@ -8,5 +8,5 @@
     "strict": true,
     "baseUrl": "./src"
   },
-  "include": ["src", "src/prisma"]
+  "include": ["src", "prisma"]
 }
