@@ -103,7 +103,30 @@ const Dashboard = () => {
     fetchStats();
     fetchRecentThreats();
     fetchRecentPredictions();
-  }, []);
+    
+    const ws = new window.WebSocket('ws://localhost:3000');
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'NEW_THREAT' && msg.payload) {
+          setRecentPredictions(prev => {
+            const updated = [msg.payload, ...prev];
+            return updated.slice(0, 5);
+          });
+          toast({
+            title: 'Recent analysis updated...',
+            description: `Predicted category: ${msg.payload.category}`,
+            variant: 'success',
+          });
+        }
+      } catch (e) {
+        // 
+      }
+    };
+    return () => {
+      ws.close();
+    };
+  }, [toast]);
 
   const handleAnalyzeCategory = async () => {
     if (!analyzeInput.trim()) {

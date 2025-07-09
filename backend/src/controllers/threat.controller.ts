@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../../prisma/client";
 import path from "path";
 import { PythonShell } from "python-shell";
+import { broadcastNewThreat } from "../index";
 export const getAllThreats = async (req: Request, res: Response) => {
   const {
     page = "1",
@@ -168,13 +169,14 @@ export const analyzeThreat = async (req: Request, res: Response) => {
           const predicted_category = results[0].predicted_category || 'Unknown';
           const predicted_severity = mapCategoryToSeverity(predicted_category);
           // Save to Predicted table
-          await prisma.predicted.create({
+          const prediction = await prisma.predicted.create({
             data: {
               text: description,
               category: predicted_category,
               severity: predicted_severity,
             },
           });
+          broadcastNewThreat(prediction);
           return res.json({
             predicted_category,
             predicted_severity,

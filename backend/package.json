@@ -19,11 +19,13 @@
     "dotenv": "^17.1.0",
     "express": "^4.21.2",
     "prisma": "^6.11.1",
-    "python-shell": "^5.0.0"
+    "python-shell": "^5.0.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.23",
+    "@types/ws": "^8.18.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }
