@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../../prisma/client";
 
 export const getAllThreats = async (req: Request, res: Response) => {
-  const { page = "1", limit = "10", category, search, sort } = req.query;
+  const { page = "1", limit = "10", category, search, sort, severity } = req.query;
 
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
@@ -22,6 +22,10 @@ export const getAllThreats = async (req: Request, res: Response) => {
       contains: search as string,
       mode: "insensitive",
     };
+  }
+
+  if (severity) {
+    where.severityScore = Number(severity);
   }
 
   let orderBy: any = { createdAt: 'desc' };

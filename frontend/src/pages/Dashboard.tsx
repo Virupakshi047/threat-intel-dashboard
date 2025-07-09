@@ -31,10 +31,8 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch from real API
         const response = await fetch('http://localhost:3000/api/threats/stats');
         const apiData: ThreatStatsApiResponse = await response.json();
-        // Map API response to ThreatStats shape for UI
         const mappedStats: ThreatStats = {
           totalThreats: apiData.totalThreats,
           threatsBySeverity: {
@@ -44,8 +42,8 @@ const Dashboard = () => {
             critical: apiData.severityCounts.find(s => s.severity === 4 || s.severity === 5)?.count || 0,
           },
           threatsByCategory: Object.fromEntries(apiData.categoryCounts.map(c => [c.category, c.count])),
-          latestThreatDate: '', // Not provided by API
-          recentThreats: [] // Not provided by API
+          latestThreatDate: '', 
+          recentThreats: [] 
         };
         setStats(mappedStats);
       } catch (error) {
@@ -112,29 +110,62 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Threats"
-          value={stats.totalThreats}
-          icon={Shield}
-          change={{ value: 12, type: 'increase' }}
-          variant="critical"
-        />
-        {Object.entries(stats.threatsByCategory).slice(0, 4).map(([cat, count], idx) => {
-          const iconMap = [Activity, Shield, AlertTriangle, Clock];
-          const variantMap: ("default" | "success" | "warning" | "critical")[] = ['default', 'success', 'warning', 'critical'];
-          return (
-            <StatCard
-              key={cat}
-              title={`${cat} Threats`}
-              value={count}
-              icon={iconMap[idx % iconMap.length]}
-              variant={variantMap[idx % variantMap.length]}
-            />
-          );
-        })}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 flex-shrink-0" style={{ minWidth: 340 }}>
+          <StatCard
+            title="Total Threats"
+            value={stats.totalThreats}
+            icon={Shield}
+            change={{ value: 12, type: 'increase' }}
+            variant="critical"
+          />
+          {Object.entries(stats.threatsByCategory).slice(0, 4).map(([cat, count], idx) => {
+            const iconMap = [Activity, Shield, AlertTriangle, Clock];
+            const variantMap: ("default" | "success" | "warning" | "critical")[] = ['default', 'success', 'warning', 'critical'];
+            return (
+              <StatCard
+                key={cat}
+                title={`${cat} Threats`}
+                value={count}
+                icon={iconMap[idx % iconMap.length]}
+                variant={variantMap[idx % variantMap.length]}
+              />
+            );
+          })}
+        </div>
+        <Card className="flex-1">
+          <CardHeader>
+            <CardTitle>Recent Threats</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentThreats.length === 0 ? (
+                <div className="text-muted-foreground">No recent threats found.</div>
+              ) : (
+                recentThreats.map((threat) => {
+                  const severityLabel = getSeverityLabel(threat.severityScore);
+                  return (
+                    <div key={threat.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{threat.threatCategory}</h4>
+                        <p className="text-sm text-muted-foreground">{threat.threatActor}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getSeverityClass(severityLabel)}`}>
+                          {severityLabel}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {threat.createdAt ? new Date(threat.createdAt).toLocaleDateString() : ''}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2">
         <ThreatChart
           data={severityData.filter(d => d.value > 0)}
@@ -148,38 +179,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Threats</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentThreats.length === 0 ? (
-              <div className="text-muted-foreground">No recent threats found.</div>
-            ) : (
-              recentThreats.map((threat) => {
-                const severityLabel = getSeverityLabel(threat.severityScore);
-                return (
-                  <div key={threat.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{threat.threatCategory}</h4>
-                      <p className="text-sm text-muted-foreground">{threat.threatActor}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getSeverityClass(severityLabel)}`}>
-                        {severityLabel}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {threat.createdAt ? new Date(threat.createdAt).toLocaleDateString() : ''}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 };
