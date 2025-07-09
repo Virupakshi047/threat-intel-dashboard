@@ -1,8 +1,16 @@
 import { Request, Response } from "express";
 import prisma from "../../prisma/client";
-
+import path from "path";
+import { PythonShell } from "python-shell";
 export const getAllThreats = async (req: Request, res: Response) => {
-  const { page = "1", limit = "10", category, search, sort, severity } = req.query;
+  const {
+    page = "1",
+    limit = "10",
+    category,
+    search,
+    sort,
+    severity,
+  } = req.query;
 
   const pageNum = parseInt(page as string, 10);
   const limitNum = parseInt(limit as string, 10);
@@ -28,10 +36,10 @@ export const getAllThreats = async (req: Request, res: Response) => {
     where.severityScore = Number(severity);
   }
 
-  let orderBy: any = { createdAt: 'desc' };
-  if (sort && typeof sort === 'string') {
-    if (sort === 'createdAt_asc') orderBy = { createdAt: 'asc' };
-    else if (sort === 'createdAt_desc') orderBy = { createdAt: 'desc' };
+  let orderBy: any = { createdAt: "desc" };
+  if (sort && typeof sort === "string") {
+    if (sort === "createdAt_asc") orderBy = { createdAt: "asc" };
+    else if (sort === "createdAt_desc") orderBy = { createdAt: "desc" };
   }
 
   try {
@@ -101,17 +109,68 @@ export const getThreatStats = async (_req: Request, res: Response) => {
 
     res.json({
       totalThreats: total,
-      categoryCounts: categoryCounts.map((c: { threatCategory: string; _count: { threatCategory: number } }) => ({
-        category: c.threatCategory,
-        count: c._count.threatCategory,
-      })),
-      severityCounts: severityCounts.map((s: { severityScore: number; _count: { severityScore: number } }) => ({
-        severity: s.severityScore,
-        count: s._count.severityScore,
-      })),
+      categoryCounts: categoryCounts.map(
+        (c: {
+          threatCategory: string;
+          _count: { threatCategory: number };
+        }) => ({
+          category: c.threatCategory,
+          count: c._count.threatCategory,
+        })
+      ),
+      severityCounts: severityCounts.map(
+        (s: { severityScore: number; _count: { severityScore: number } }) => ({
+          severity: s.severityScore,
+          count: s._count.severityScore,
+        })
+      ),
     });
   } catch (error) {
     console.error("❌ Failed to fetch stats:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const analyzeThreat = async (req: Request, res: Response) => {
+  const { description } = req.body;
+  if (!description || typeof description !== "string") {
+    return res
+      .status(400)
+      .json({ error: "Missing or invalid 'description' in request body" });
+  }
+
+  
+
+  try {
+    const options = {
+      mode: "json" as const, 
+      pythonOptions: ["-u"],
+      scriptPath: path.join(__dirname, "../../ml"),
+      args: [description],
+    };
+
+    PythonShell.run("predict_api.py", options)
+      .then((results) => {
+        if (results && results.length > 0) {
+          return res.json({
+            predicted_category: results[0].predicted_category,
+          });
+        } else {
+          return res
+            .status(500)
+            .json({ error: "No prediction results returned" });
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Prediction error:", err);
+        return res
+          .status(500)
+          .json({ error: "Failed to analyze threat description" });
+      });
+  } catch (error) {
+    console.error("❌ Prediction error:", error);
+    return res
+      .status(500)
+      .json({ error: "Failed to analyze threat description" });
   }
 };
