@@ -18,6 +18,7 @@ const Threats = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const debouncedSetSearchTerm = useMemo(() => debounce((value: string) => {
     setSearchTerm(value);
@@ -137,7 +138,12 @@ const Threats = () => {
         onClearFilters={handleClearFilters}
       />
 
-      <ThreatTable threats={threats} loading={loading} />
+      <ThreatTable
+        threats={threats}
+        loading={loading}
+        expandedId={expandedId}
+        setExpandedId={setExpandedId}
+      />
 
       {!loading && total > 0 && (
         <div className="flex items-center justify-between">
@@ -159,10 +165,10 @@ const Threats = () => {
             <div className="flex items-center space-x-1">
               {getPageNumbers().map((page, idx) =>
                 page === '...'
-                  ? <span key={idx} className="px-2">...</span>
+                  ? <span key={`ellipsis-${idx}`} className="px-2">...</span>
                   : (
                     <Button
-                      key={page}
+                      key={`page-${page}`}
                       variant={currentPage === page ? "default" : "outline"}
                       size="sm"
                       onClick={() => setCurrentPage(Number(page))}

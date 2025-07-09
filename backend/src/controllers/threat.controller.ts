@@ -139,7 +139,20 @@ export const analyzeThreat = async (req: Request, res: Response) => {
       .json({ error: "Missing or invalid 'description' in request body" });
   }
 
-  
+  // Simple mapping from category to severity
+  function mapCategoryToSeverity(category: string): string {
+    switch (category.toLowerCase()) {
+      case 'ransomware':
+      case 'malware':
+        return 'critical';
+      case 'phishing':
+        return 'high';
+      case 'ddos':
+        return 'medium';
+      default:
+        return 'low';
+    }
+  }
 
   try {
     const options = {
@@ -150,10 +163,21 @@ export const analyzeThreat = async (req: Request, res: Response) => {
     };
 
     PythonShell.run("predict_api.py", options)
-      .then((results) => {
+      .then(async (results) => {
         if (results && results.length > 0) {
+          const predicted_category = results[0].predicted_category || 'Unknown';
+          const predicted_severity = mapCategoryToSeverity(predicted_category);
+          // Save to Predicted table
+          await prisma.predicted.create({
+            data: {
+              text: description,
+              category: predicted_category,
+              severity: predicted_severity,
+            },
+          });
           return res.json({
-            predicted_category: results[0].predicted_category,
+            predicted_category,
+            predicted_severity,
           });
         } else {
           return res
@@ -172,5 +196,18 @@ export const analyzeThreat = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ error: "Failed to analyze threat description" });
+  }
+};
+
+export const getRecentPredictions = async (_req: Request, res: Response) => {
+  try {
+    const recents = await prisma.predicted.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+    res.json(recents);
+  } catch (error) {
+    console.error('❌ Failed to fetch recent predictions:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };

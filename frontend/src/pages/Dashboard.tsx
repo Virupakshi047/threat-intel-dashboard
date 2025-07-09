@@ -5,6 +5,27 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { ThreatChart } from '@/components/dashboard/ThreatChart';
 import { Shield, AlertTriangle, Activity, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+
+type RecentPrediction = {
+  id: number;
+  text: string;
+  category: string;
+  severity: string;
+  createdAt: string;
+};
 
 function getSeverityLabel(score: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
   if (score >= 4) return 'CRITICAL';
@@ -27,6 +48,12 @@ const Dashboard = () => {
   const [stats, setStats] = useState<ThreatStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [recentThreats, setRecentThreats] = useState<Threat[]>([]);
+  const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  const [analyzeInput, setAnalyzeInput] = useState('');
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
+  const [recentPredictions, setRecentPredictions] = useState<RecentPrediction[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -63,9 +90,55 @@ const Dashboard = () => {
       }
     };
 
+    const fetchRecentPredictions = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/threats/recents');
+        const data = await response.json();
+        setRecentPredictions(data || []);
+      } catch (error) {
+        console.error('Error fetching recent predictions:', error);
+      }
+    };
+
     fetchStats();
     fetchRecentThreats();
+    fetchRecentPredictions();
   }, []);
+
+  const handleAnalyzeCategory = async () => {
+    if (!analyzeInput.trim()) {
+      toast({
+        title: 'Input Required',
+        description: 'Please enter a threat description.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setAnalyzeLoading(true);
+    setAnalyzeResult(null);
+    try {
+      const response = await fetch('http://localhost:3000/api/threats/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: analyzeInput }),
+      });
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      setAnalyzeResult(data.predicted_category || 'Unknown');
+      toast({
+        title: 'Prediction Complete',
+        description: `Predicted category: ${data.predicted_category}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Prediction Failed',
+        description: 'An error occurred while analyzing the threat.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,13 +176,49 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Security Dashboard</h1>
-        <p className="text-muted-foreground">
-          Overview of current threat landscape and security metrics
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Security Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of current threat landscape and security metrics
+          </p>
+        </div>
+        <Dialog open={analyzeOpen} onOpenChange={setAnalyzeOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setAnalyzeOpen(true)}>Analyze</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Analyze Threat Category</DialogTitle>
+              <DialogDescription>
+                Enter a threat description to predict its category.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              placeholder="Enter threat description..."
+              value={analyzeInput}
+              onChange={e => setAnalyzeInput(e.target.value)}
+              disabled={analyzeLoading}
+            />
+            <DialogFooter>
+              <Button
+                onClick={handleAnalyzeCategory}
+                disabled={analyzeLoading || !analyzeInput.trim()}
+              >
+                {analyzeLoading ? 'Checking...' : 'Check Category'}
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={analyzeLoading}>Close</Button>
+              </DialogClose>
+            </DialogFooter>
+            {analyzeResult && (
+              <div className="mt-4 text-center">
+                <span className="font-semibold">Predicted Category:</span> {analyzeResult}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
-
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 flex-shrink-0" style={{ minWidth: 340 }}>
           <StatCard
@@ -133,34 +242,30 @@ const Dashboard = () => {
             );
           })}
         </div>
+        {/* Replacing Recent Threats with Recent Analyses */}
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle>Recent Threats</CardTitle>
+            <CardTitle>Recent Analyses</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentThreats.length === 0 ? (
-                <div className="text-muted-foreground">No recent threats found.</div>
+              {recentPredictions.length === 0 ? (
+                <div className="text-muted-foreground">No recent analyses found.</div>
               ) : (
-                recentThreats.map((threat) => {
-                  const severityLabel = getSeverityLabel(threat.severityScore);
-                  return (
-                    <div key={threat.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{threat.threatCategory}</h4>
-                        <p className="text-sm text-muted-foreground">{threat.threatActor}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getSeverityClass(severityLabel)}`}>
-                          {severityLabel}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {threat.createdAt ? new Date(threat.createdAt).toLocaleDateString() : ''}
-                        </span>
-                      </div>
+                recentPredictions.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-semibold">{item.category}</h4>
+                      <p className="text-sm text-muted-foreground">{item.text}</p>
                     </div>
-                  );
-                })
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${item.severity === 'critical' ? 'bg-red-600 text-white' : item.severity === 'high' ? 'bg-orange-600 text-white' : item.severity === 'medium' ? 'bg-yellow-500 text-black' : 'bg-green-600 text-white'}`}>{item.severity?.toUpperCase()}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </CardContent>

@@ -5,15 +5,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import React from 'react';
 
 interface ThreatTableProps {
   threats: Threat[];
   loading?: boolean;
+  expandedId: number | null;
+  setExpandedId: (id: number | null) => void;
 }
-
-export const ThreatTable = ({ threats, loading }: ThreatTableProps) => {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-
+export const ThreatTable = ({ threats, loading, expandedId, setExpandedId }: ThreatTableProps) => {
   const getSeverityVariant = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -75,8 +75,8 @@ export const ThreatTable = ({ threats, loading }: ThreatTableProps) => {
             </TableHeader>
             <TableBody>
               {threats.map((threat) => (
-                <>
-                  <TableRow key={threat.id}>
+                <React.Fragment key={threat.id}>
+                  <TableRow>
                     <TableCell className="font-medium">{threat.title}</TableCell>
                     <TableCell>{threat.category}</TableCell>
                     <TableCell>
@@ -123,7 +123,7 @@ export const ThreatTable = ({ threats, loading }: ThreatTableProps) => {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>

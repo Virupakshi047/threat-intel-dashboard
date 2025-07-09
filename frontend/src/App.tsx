@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Threats from "./pages/Threats";
-import Analysis from "./pages/Analysis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +24,6 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/threats" element={<Threats />} />
-                <Route path="/analysis" element={<Analysis />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

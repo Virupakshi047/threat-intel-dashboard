@@ -26,3 +26,11 @@ model Threat {
   wordCount                 Int
   createdAt                 DateTime @default(now())
 }
+
+model Predicted {
+  id        Int      @id @default(autoincrement())
+  text      String
+  category  String
+  severity  String
+  createdAt DateTime @default(now())
+}
